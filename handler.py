@@ -6,7 +6,7 @@ def index(req):
     return '''
         <html>
         <head>
-        <title>Bitmap to SVG</title>
+        <title>Derasterizer: Raster image to SVG converter</title>
         </head>
         <body>
         <h1>Bitmap to SVG converter</h1>
@@ -14,9 +14,9 @@ def index(req):
         <p></p>
         <form action="/handler.py/convert" method="post" enctype="multipart/form-data">
         Upload a file: <input name="file" id="file" type="file"><br/>
-        Block size (8): <input name="box_size" type="number" min="1" max="256" placeholder="8"><br/>
-        Alpha adjust (1.0): <input name="alpha_value" type="number" min="0" max="1" placeholder="1.0"><br/>
-        Filter limit (1.5): <input name="filter_limit" type="number" min="0" placeholder="1.5"><br/>
+        Block size (8): <input name="block_size" type="number" min="1" max="256" placeholder="8"><br/>
+        Alpha adjustment (1.0): <input name="alpha_value" type="number" min="0" max="1" placeholder="1.0"><br/>
+        Filter limit (Block size / 5): <input name="filter_limit" type="number" min="0" placeholder="1.6"><br/>
         <input type="submit">
         </form>
         </body>
@@ -25,16 +25,16 @@ def index(req):
 
 def convert(req):
     tmpfile = req.form["file"]
-    block_size = int(req.form["box_size"] or 8)
-    alpha_value = float(req.form["alpha_value"] or  1.0)
-    filter_limit = float(req.form["filter_limit"] or (block_size / 5))
+    block_size = int(req.form.get("block_size", 8))
+    alpha_value = float(req.form.get("alpha_value", None) or  1.0)
+    filter_limit = float(req.form.get("filter_limit", None) or (block_size / 5.0))
     
     leafname, ext = path.splitext(tmpfile.filename)
     
     newfile = converter.convert(tmpfile.file,
-                                box_size=block_size,
-                                alpha=alpha_value,
-                                filter_size=filter_limit,
+                                block_size=block_size,
+                                alpha_value=alpha_value,
+                                filter_limit=filter_limit,
                                 outfile="/var/www/images/%s.svg" % leafname)
     
     basename = path.basename(newfile)
