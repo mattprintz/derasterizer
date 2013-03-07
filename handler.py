@@ -1,6 +1,7 @@
 from mod_python import apache, util
 import convert as converter
 from os import path
+import re
 
 def index(req):
     return '''
@@ -15,8 +16,8 @@ def index(req):
         <form action="/handler.py/convert" method="post" enctype="multipart/form-data">
         Upload a file: <input name="file" id="file" type="file"><br/>
         Block size (8): <input name="block_size" type="number" min="1" max="256" placeholder="8"><br/>
-        Alpha adjustment (1.0): <input name="alpha_value" type="number" min="0" max="1" placeholder="1.0"><br/>
-        Filter limit (Block size / 5): <input name="filter_limit" type="number" min="0" placeholder="1.6"><br/>
+        Alpha adjustment (1.0): <input name="alpha_value" type="number" placeholder="1.0"><br/>
+        Filter limit (Block size / 5): <input name="filter_limit" type="number" placeholder="1.6"><br/>
         <input type="submit">
         </form>
         </body>
@@ -25,7 +26,7 @@ def index(req):
 
 def convert(req):
     tmpfile = req.form["file"]
-    block_size = int(req.form.get("block_size", 8))
+    block_size = int(req.form.get("block_size", None) or 8)
     alpha_value = float(req.form.get("alpha_value", None) or  1.0)
     filter_limit = float(req.form.get("filter_limit", None) or (block_size / 5.0))
     
@@ -45,11 +46,29 @@ def display(req, img=None):
     return '''
         <html>
         <head>
-        <title>Bitmap to SVG</title>
+        <title>Derasterizer: Preview</title>
         </head>
         <body>
-        <img style="height:98%%; width:98%%" src="/images/%s"><br/>
+        <img style="height:97%%; width:98%%" src="/images/%(img)s"><br/>
         <a href="/">Back</a>
+        <a href="/images/%(img)s">Direct link (right-click to save)</a>
+        <a href="/handler.py/fullsize?img=%(img)s">View full size</a>
         </body>
         </html>
-    ''' % img
+    ''' % {'img': img}
+
+def fullsize(req, img=None):
+    svgfile = open("/var/www/images/%s" % img)
+    results = re.search(r'viewBox="0 0 (\d+) (\d+)"', svgfile.read(500))
+    if results:
+        width, height = results.groups()
+    return '''
+        <html>
+        <head>
+        <title>Derasterizer: Full sized</title>
+        </head>
+        <body>
+        <div style="height: %spx; width: %spx; background-image: url('/images/%s');"/>
+        </body>
+        </html>
+    ''' % (height, width, img)

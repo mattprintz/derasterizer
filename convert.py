@@ -3,6 +3,7 @@
 from PIL import Image
 import svgwrite
 
+# TODO: switch filter to ratio
 
 def convert(img_file, block_size=8, alpha_value=1.0, filter_limit=None, outfile=None):
     '''
@@ -18,7 +19,7 @@ def convert(img_file, block_size=8, alpha_value=1.0, filter_limit=None, outfile=
     '''
     
     # Helper function
-    def getSquareAvg(image, xoffset, yoffset, size, alpha_value):
+    def getBlockAvg(image, xoffset, yoffset, size, alpha_value):
         # Set parameters
         width, height = image.size
         pixels = []
@@ -48,17 +49,17 @@ def convert(img_file, block_size=8, alpha_value=1.0, filter_limit=None, outfile=
     image = Image.open(img_file)
     image = image.convert("L")
     
-    # Open and prepare SVG output file
-    svg = svgwrite.Drawing(outfile, profile="tiny")
-    
     # Initiate variables
     width, height = image.size
     x, y = 0, 0
     
+    # Open and prepare SVG output file
+    svg = svgwrite.Drawing(outfile, size=('100%', '100%'), profile="tiny", viewBox="0 0 %d %d" % (width, height), )
+    
     # Process image in blocks until all 
     while x < width and y < height:
         # Process current block determing circle radius
-        radius = getSquareAvg(image, x, y, block_size, alpha_value=alpha_value)
+        radius = getBlockAvg(image, x, y, block_size, alpha_value=alpha_value)
         # Draw circle to SVG if radius is greater than the filter_limit.
         if radius > filter_limit:
             svg.add(svg.circle((x+(block_size/2), y+(block_size/2)), radius))
