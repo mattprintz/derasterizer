@@ -19,7 +19,7 @@ def convert(img_file, block_size=8, alpha_value=1.0, filter_limit=None, outfile=
     '''
     
     # Helper function
-    def getBlockAvg(image, xoffset, yoffset, size, alpha_value):
+    def getBlockAvg(image, xoffset, yoffset, size, alpha_value, inverse=False):
         # Set parameters
         width, height = image.size
         pixels = []
@@ -37,6 +37,8 @@ def convert(img_file, block_size=8, alpha_value=1.0, filter_limit=None, outfile=
         # Modifying the alpha_value allows for changing the level of contrast for images
         # If alpha value causes the radius to exceed halfblock size, radius should be set to halfblock size
         radius = min((size/2) * ((255-average) / (255.0*alpha_value)), size/2)
+        if inverse:
+            radius = (size/2) - radius
         return radius
     
     # Set defaults

@@ -15,9 +15,9 @@ def index(req):
         <p></p>
         <form action="/handler.py/convert" method="post" enctype="multipart/form-data">
         Upload a file: <input name="file" id="file" type="file"><br/>
-        Block size (8): <input name="block_size" type="number" min="1" max="256" placeholder="8"><br/>
-        Alpha adjustment (1.0): <input name="alpha_value" type="number" placeholder="1.0"><br/>
-        Filter limit (Block size / 5): <input name="filter_limit" type="number" placeholder="1.6"><br/>
+        Block size (8): <input name="block_size" type="number" min="2" max="256" placeholder="8"><br/>
+        Alpha adjustment (1.0): <input name="alpha_value" placeholder="1.0"><br/>
+        Filter limit (Block size / 5): <input name="filter_limit" placeholder="1.6"><br/>
         <input type="submit">
         </form>
         </body>
