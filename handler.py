@@ -1,9 +1,11 @@
 from mod_python import apache, util
 import convert as converter
+from convert import shapes
 from os import path
 import re
 
 def index(req):
+    shape_choices = ''.join(['''<option value="%s">%s</option>''' % (shape, shape) for shape in shapes])
     return '''
         <html>
         <head>
@@ -16,23 +18,26 @@ def index(req):
         <form action="/handler.py/convert" method="post" enctype="multipart/form-data">
         Upload a file: <input name="file" id="file" type="file"><br/>
         Block size (8): <input name="block_size" type="number" min="2" max="256" placeholder="8"><br/>
-        Alpha adjustment (1.0): <input name="alpha_value" placeholder="1.0"><br/>
-        Filter limit (Block size / 5): <input name="filter_limit" placeholder="1.6"><br/>
+        Alpha adjustment (0.0 - 2.0): <input name="alpha_value" placeholder="1.0"><br/>
+        Filter limit (0.0 - 1.0): <input name="filter_limit" placeholder="0.1"><br/>
+        Shape type: <select name="shape">%s</select><br/>
         <input type="submit">
         </form>
         </body>
         </html>
-    '''
+    ''' % shape_choices
 
 def convert(req):
     tmpfile = req.form["file"]
     block_size = int(req.form.get("block_size", None) or 8)
     alpha_value = float(req.form.get("alpha_value", None) or  1.0)
     filter_limit = float(req.form.get("filter_limit", None) or (block_size / 5.0))
+    shape = req.form.get("shape", None)
     
     leafname, ext = path.splitext(tmpfile.filename)
     
     newfile = converter.convert(tmpfile.file,
+                                shape_name=shape,
                                 block_size=block_size,
                                 alpha_value=alpha_value,
                                 filter_limit=filter_limit,
