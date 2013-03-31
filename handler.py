@@ -1,8 +1,11 @@
 from mod_python import apache, util
 import convert as converter
 from convert import shapes
-from os import path
+from os import path, fdopen
 import re
+import tempfile
+import shutil
+import processor
 
 def index(req):
     shape_choices = ''.join(['''<option value="%s">%s</option>''' % (shape, shape) for shape in shapes])
@@ -28,24 +31,43 @@ def index(req):
     ''' % shape_choices
 
 def convert(req):
-    tmpfile = req.form["file"]
-    block_size = int(req.form.get("block_size", None) or 8)
-    alpha_value = float(req.form.get("alpha_value", None) or  1.0)
-    filter_limit = float(req.form.get("filter_limit", None) or (block_size / 5.0))
-    shape = req.form.get("shape", None)
     
-    leafname, ext = path.splitext(tmpfile.filename)
+    uploaded_file = req.form["file"]
+    leafname, ext = path.splitext(uploaded_file.filename)
     
-    newfile = converter.convert(tmpfile.file,
-                                shape_name=shape,
-                                block_size=block_size,
-                                alpha_value=alpha_value,
-                                filter_limit=filter_limit,
-                                outfile="/var/www/images/%s.svg" % leafname)
+    temp_fd, temp_name = tempfile.mkstemp(prefix="svg", suffix=ext, dir="/var/www/conversion")
+    temp_file = fdopen(temp_fd, "w+b")
+    shutil.copyfileobj(uploaded_file.file, temp_file)
+    temp_file.seek(0)
     
-    basename = path.basename(newfile)
+    opt = {
+        'block_size': int(req.form.get("block_size", None) or 8),
+        'alpha_value':  float(req.form.get("alpha_value", None) or 1.0),
+        'filter_limit': float(req.form.get("filter_limit", None) or 0.1),
+        'shape': req.form.get("shape", None),
+    }
     
-    util.redirect(req, "/handler.py/display?img=%s" % basename)
+    job = temp_name.split("/")[-1]
+    count = processor.startConversion(temp_file, base_leaf=leafname, job=job, **opt)
+    
+    return ":: %s" % count
+    util.redirect(req, "/handler.py/conversion?job=%s" % job)
+    
+    #leafname, ext = path.splitext(tmpfile.filename)
+    #
+    #newfile = converter.convert(tmpfile.file,
+    #                            shape_name=shape,
+    #                            block_size=block_size,
+    #                            alpha_value=alpha_value,
+    #                            filter_limit=filter_limit,
+    #                            outfile="/var/www/images/%s.svg" % leafname)
+    #
+    #basename = path.basename(newfile)
+    #
+    #util.redirect(req, "/handler.py/display?img=%s" % basename)
+
+def conversion(req, job=None):
+    return "job: %s" % job
 
 def display(req, img=None):
     return '''
