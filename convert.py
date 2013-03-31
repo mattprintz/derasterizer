@@ -11,6 +11,7 @@ shapes = [
     'CrosshatchRandom',
     'Zigzag',
     'Squiggle',
+    'Sine',
 ]
 
 class Block(object):
@@ -207,7 +208,7 @@ class Squiggle(Block):
         if self.intensity < self.filter_ratio:
             return
         
-        segments = int(max(min(30 * self.intensity, 40), 1))
+        segments = int(max(min(20 * self.intensity, 30), 1))
         
         def rand_point():
             return random.uniform(self.left, self.right), random.uniform(self.top, self.bottom)
@@ -219,6 +220,24 @@ class Squiggle(Block):
         
         svg_file.add(path)
 
+class Sine(Block):
+    
+    def draw(self, svg_file, max_waves=20):
+        
+        if self.intensity < self.filter_ratio:
+            return
+        
+        waves = int(max(min(max_waves * self.intensity, max_waves*1.5), 1))
+        
+        peak_offset = self.block_size * 0.8
+        step_width = (self.block_size / (waves * 4.0))
+        
+        path = Path(("M", self.left, self.mid_y), stroke="black", stroke_width="0.3", fill="none")
+        for _ in range(waves):
+            path.push("q", step_width, -peak_offset, 2 * step_width, 0)
+            path.push("q", step_width, peak_offset, 2 * step_width, 0)
+        svg_file.add(path)
+        
 
 def convert(img_file, shape_name='Circle', block_size=8, alpha_value=1.0, filter_limit=0.1, outfile=None):
     '''
