@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 from PIL import Image
 import svgwrite
 from svgwrite.path import Path
@@ -33,13 +34,23 @@ class Block(object):
         for y in range(self.y_offset, self.y_offset + self.block_size):
             for x in range(self.x_offset, self.x_offset + self.block_size):
                 if x < width and y < height:
-                    pixels.append(self.image.getpixel((x,y)))
+                    pixel_data = self.image.getpixel((x,y))
+                    if isinstance(pixel_data, (tuple, list)):
+                        if len(pixel_data) == 3:
+                            pixel_val = (sum(pixel_data) / len(pixel_data))
+                        elif len(pixel_data) == 2:
+                            val, alpha = pixel_data
+                            pixel_val = (255-alpha) * ((255-val)/255)
+                    else:
+                        pixel_val = pixel_data
+                    pixels.append(pixel_val)
         
         # Determine average value of pixels in block
         if pixels:
             intensity = (255.0 - (sum(pixels) / len(pixels))) / (255.0 * self.alpha)
         else:
             intensity = 0
+
         
         # If alpha value causes the radius to exceed halfblock size, radius should be set to halfblock size
         return intensity
@@ -214,7 +225,7 @@ class Squiggle(Block):
             return random.uniform(self.left, self.right), random.uniform(self.top, self.bottom)
         
         start = rand_point()
-        path = Path(("M",) + start, stroke="black", stroke_width="0.3", fill="none")
+        path = Path(("M",) + start, stroke="black", stroke_width="0.8", fill="none")
         for _ in range(segments):
             path.push("T", *rand_point())
         
@@ -258,7 +269,7 @@ def convert(img_file, shape_name='Circle', block_size=8, alpha_value=1.0, filter
     
     # Open and prepare raster image file
     image = Image.open(img_file)
-    image = image.convert("L")
+    image = image.convert("LA")
     
     # Initiate variables
     width, height = image.size
@@ -288,3 +299,7 @@ def convert(img_file, shape_name='Circle', block_size=8, alpha_value=1.0, filter
     svg.save()
     return outfile
 
+
+if __name__ == "__main__":
+    fn, of = sys.argv[1:3]
+    convert(fn, block_size=30, shape_name="Squiggle", outfile=of)
